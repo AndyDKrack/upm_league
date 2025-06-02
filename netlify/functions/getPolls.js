@@ -3,8 +3,8 @@ const path = require('path');
 
 exports.handler = async () => {
   try {
-    // Use path.resolve for absolute path
-    const filePath = path.resolve(__dirname, '../../src/data/polls.json');
+    // Use path.resolve for absolute path (now polls.json is in the same directory as this function)
+    const filePath = path.resolve(__dirname, 'polls.json');
     if (!fs.existsSync(filePath)) {
       return {
         statusCode: 500,
