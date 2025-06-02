@@ -1,0 +1,15 @@
+[
+  {
+    "id": "demo-1",
+    "question": "What should we focus on for youth 2025?",
+    "options": [
+      { "text": "Climate Action", "votes": 5 },
+      { "text": "Mental Health", "votes": 3 },
+      { "text": "Job Creation", "votes": 2 }
+    ],
+    "approved": true,
+    "multi": false,
+    "county": "Nairobi",
+    "expiresAt": null
+  }
+]
