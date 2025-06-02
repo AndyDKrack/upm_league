@@ -3,7 +3,8 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
 exports.handler = async (event) => {
-  const filePath = path.join(__dirname, '../../src/data/polls.json');
+  // Write to the same file used by getPolls.js
+  const filePath = path.join(__dirname, 'polls.json');
   const polls = JSON.parse(fs.readFileSync(filePath));
 
   const body = JSON.parse(event.body);
