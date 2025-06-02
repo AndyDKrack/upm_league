@@ -1,17 +1,7 @@
-const fs = require('fs');
-const path = require('path');
-
 exports.handler = async () => {
   try {
-    // Use path.resolve for absolute path (now polls.json is in the same directory as this function)
-    const filePath = path.resolve(__dirname, 'polls.json');
-    if (!fs.existsSync(filePath)) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'polls.json not found', filePath }),
-      };
-    }
-    const polls = JSON.parse(fs.readFileSync(filePath));
+    // Use require to ensure Netlify bundles polls.json
+    const polls = require('./polls.json');
     const now = new Date();
     const approved = polls.filter(p => p.approved);
     const active = approved.filter(p => !p.expiresAt || new Date(p.expiresAt) > now);
