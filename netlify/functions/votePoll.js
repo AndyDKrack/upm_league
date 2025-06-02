@@ -1,36 +1,48 @@
-const fs = require('fs');
-const path = require('path');
+
+
+
+const mysql = require('mysql2/promise');
 
 exports.handler = async (event) => {
-  const { pollId, optionIndexes, ip } = JSON.parse(event.body);
+  try {
+    const { pollId, optionIndex } = JSON.parse(event.body);
 
-  const pollFile = path.join(__dirname, '../../src/data/polls.json');
-  const voteFile = path.join(__dirname, '../../src/data/submissions.json');
-  const polls = JSON.parse(fs.readFileSync(pollFile));
-  const submissions = JSON.parse(fs.readFileSync(voteFile));
+    // Connect to MySQL
+    const connection = await mysql.createConnection({
+      host: 'hilley-consultants.com',
+      user: 'hilleyco_judge',
+      password: '@X991poller',
+      database: 'hilleyco_poll',
+      port: 3306
+    });
 
-  const poll = polls.find(p => p.id === pollId);
-  if (!poll) return { statusCode: 404, body: 'Poll not found' };
+    // Get current poll options
+    const [rows] = await connection.execute('SELECT options, expiresAt FROM polls WHERE id = ?', [pollId]);
+    if (rows.length === 0) {
+      await connection.end();
+      return { statusCode: 404, body: JSON.stringify({ error: 'Poll not found' }) };
+    }
+    const poll = rows[0];
+    if (poll.expiresAt && new Date(poll.expiresAt) < new Date()) {
+      await connection.end();
+      return { statusCode: 403, body: JSON.stringify({ error: 'Poll has expired.' }) };
+    }
+    const options = JSON.parse(poll.options);
 
-  if (poll.expiresAt && new Date(poll.expiresAt) < new Date()) {
-    return { statusCode: 403, body: 'Poll has expired.' };
+    // Increment the vote
+    if (options[optionIndex]) {
+      options[optionIndex].votes += 1;
+    } else {
+      await connection.end();
+      return { statusCode: 400, body: JSON.stringify({ error: 'Invalid option index' }) };
+    }
+
+    // Update the poll in the database
+    await connection.execute('UPDATE polls SET options = ? WHERE id = ?', [JSON.stringify(options), pollId]);
+    await connection.end();
+
+    return { statusCode: 200, body: JSON.stringify({ message: 'Vote recorded' }) };
+  } catch (err) {
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
-
-  if (!submissions[pollId]) submissions[pollId] = [];
-  if (submissions[pollId].includes(ip)) {
-    return { statusCode: 403, body: 'Duplicate vote detected.' };
-  }
-
-  optionIndexes.forEach(i => {
-    if (poll.options[i]) poll.options[i].votes++;
-  });
-
-  submissions[pollId].push(ip);
-  fs.writeFileSync(pollFile, JSON.stringify(polls, null, 2));
-  fs.writeFileSync(voteFile, JSON.stringify(submissions, null, 2));
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify(poll),
-  };
 };
